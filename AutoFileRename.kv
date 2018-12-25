@@ -1,0 +1,178 @@
+# NOTE: Strange effects from sizing other BoxLayouts, height settings
+
+<headerbar@BoxLayout>:
+    size_hint_y: None
+    height: 45
+    canvas:
+        Color:
+            rgba: 1, 1, 0, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<AutoRenameLayout>:
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 10, 10  # margin
+        spacing: 5  # between each successive element within this
+
+        # Title
+        BoxLayout:
+            size_hint_y: None
+            height: 45
+            canvas:
+                Color:
+                    rgba: 1, 1, 0, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                text: "Auto File Rename"
+                font_size: 32
+                color: 0.6, 0, 0, 1
+
+        # Text Input Row
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Label:
+                text: "Directory: "
+                text_size: self.width, None
+                size_hint_max_x: 100
+                padding: 5, 0
+            TextInput:
+                id: text_label
+                text: root.fullpath_name
+                on_text: root.fullpath_name = root.ids.text_label.text
+                multiline: False
+            Button:
+                text: "List Files"
+                size_hint_max_x: 75
+                on_press: root.check_dir()
+
+        # Second Row
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Label:
+                text: "Validation: "
+                text_size: self.width, None
+                size_hint_max_x: 100
+                padding: 5, 0
+            TextInput:
+                id: valid_path
+                text: ''
+
+            Button:
+                size_hint_max_x: 75
+                canvas.before:
+                    Color:
+                        rgba: 0, 0, 0, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                text: "List Files"
+                on_press: root.list_files()
+
+        # File List Display Box
+        BoxLayout:
+            size_hint_y: None
+            height: 250
+            Label:
+                text: "Files in Dir:"
+                text_size: self.width, None
+                size_hint_max_x: 100
+                padding: 5, 0
+            TextInput:
+                id: display_files
+                text: ''
+            Button:
+                text: "Test \nChanges"
+                size_hint_max_x: 75
+                canvas.before:
+                    Color:
+                        rgba: 0, 0, 0, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                on_press: root.file_rename(commit=False)
+
+        # Settings And Options Banner
+        BoxLayout:
+            size_hint_y: None
+            height: 32
+            Label:
+                text: "Settings and Options"
+                background_color: 0, 0, 0, 1
+
+        BoxLayout:
+            size_hint_y: None
+            height: 32
+            spacing: 5, 5
+            Label:
+                text: "End After:"
+                text_size: self.width, None
+                size_hint_max_x: 75
+                padding: 5, 0
+            TextInput:
+                id: keyword
+                text: root.keyword_end
+                on_text: root.keyword_end = root.ids.keyword.text
+            Label:
+                text: "Remove Char/s: "
+                text_size: self.width, None
+                size_hint_max_x: 75
+                padding: 5, 0
+            TextInput:
+                id: split
+                text: root.split_chars
+                on_text: root.split_chars = root.ids.split.text
+            Label:
+                text: "Replace Phrase: "
+                text_size: self.width, None
+                size_hint_max_x: 75
+                padding: 5, 0
+            TextInput:
+                id: replace_phrase
+                text: root.replace_phrase
+                on_text: root.replace_phrase = root.ids.replace_phrase.text
+            Label:
+                text: "With Phrase:"
+                text_size: self.width, None
+                size_hint_max_x: 75
+                padding: 5, 0
+            TextInput:
+                id: with_phrase
+                text: root.with_phrase
+                on_text: root.with_phrase = root.ids.with_phrase.text
+            Button:
+                text: "Apply"
+                on_press: # update
+
+        # Folder dir rename
+        BoxLayout:
+            size_hint_y: None
+            height: 32
+            spacing: 5, 5
+            Label:
+                size_hint_max_x: 75
+                text: "Rename Dir: "
+            TextInput:
+                id: dir_rename
+                text: root.fullpath_name
+                on_text:
+            Button:
+                size_hint_max_x: 100
+                text: "Rename Dir"
+                on_press: root.dir_rename(commit=True)
+
+        # Big Button
+        BoxLayout:
+            Button:
+                text: "Apply Changes"
+                on_press: root.file_rename(commit=True)
+            Button:
+                size_hint_max_x: 150
+                text: "Undo"
+                on_press: root.undo_rename()
