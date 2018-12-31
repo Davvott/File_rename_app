@@ -6,15 +6,6 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty
 from kivy.clock import Clock
 
-# One file at a time? Or one folder at a time? --- () to handle both
-# Prompt Split_char default='.'
-# Prompt Keyword End
-# Final Button to Commit Changes
-# TODO: Add PopUp functionality for Instructions; Error; COMMIT!
-# TODO: Add '*' replace any char() functionality. e.g. 'E0*'
-# TODO: set log.txt dirname to save to home folder
-# TODO: Add '\n' to log.txt write; write_log()
-
 
 class AutoRenameLayout(BoxLayout):
 
@@ -23,8 +14,12 @@ class AutoRenameLayout(BoxLayout):
     split_chars = StringProperty('.')
     replace_phrase = StringProperty('')
     with_phrase = StringProperty("")
+    _rootpath = StringProperty(os.path.abspath(os.path.curdir))
 
     def check_dir(self):
+        """
+        Checks pathname is a valid directory.
+        """
         if os.path.exists(self.ids.text_label.text):
             self.ids.valid_path.text = "Directory exists"
             self.fullpath_name = self.ids.text_label.text
@@ -32,10 +27,12 @@ class AutoRenameLayout(BoxLayout):
             self.ids.valid_path.text = "Directory does not exist"
 
     def list_files(self):
+        """ Checks dir and calls file log to display box """
         self.check_dir()
         self.ids.display_files.text = self.display_file_log()
 
     def display_file_log(self):
+        """ Creates itemised list of all files in dir. """
         log = []
         current_dir = self.fullpath_name
         try:
@@ -45,8 +42,14 @@ class AutoRenameLayout(BoxLayout):
             log.append(self.fullpath_name)
         return "\n".join(log)
 
-    # All characters in TextInput to a space
     def split_recursion(self, split_chars, string):
+        """ Splits file/dir name on all split_chars.
+        Args:
+            split_chars: Should be string of special characters "._-="
+            string: The basename of file/dir
+        Returns:
+            Recursively split basename as string.
+        """
         if split_chars == '':
             return string
         else:
@@ -54,7 +57,13 @@ class AutoRenameLayout(BoxLayout):
             return self.split_recursion(split_chars[1:], filename)
 
     def replace_chars(self, file_string):
-
+        """Regex driven phrase replacement
+            Uses .format() method to insert variable into regex expression string
+        Args:
+            file_string: basename as string
+        Returns:
+            Formatted filename
+        """
         replace_chars = self.replace_phrase.replace("*", ".")
         reg_phrase = r'{}'.format(replace_chars)
         regex = re.compile(reg_phrase)
@@ -62,7 +71,13 @@ class AutoRenameLayout(BoxLayout):
         return formatted_filename
 
     def rename_engine(self, string, is_a_dir=False):
-
+        """ Main engine for rename.
+        Args:
+            string: The basename of file/dir
+            is_a_dir: Boolean value for suffix sub
+        Returns:
+            Re-named basename
+        """
         # Replace chars before split
         if self.replace_phrase == '':
             pass
@@ -91,14 +106,22 @@ class AutoRenameLayout(BoxLayout):
                 new_name = " ".join(file_name_list[:end_indice + 1])
         return new_name
 
-    # The engine. More work to do.
     def file_rename(self, commit=False):
+        """Iterates through dir, displaying possible rename.
+        On Commit will rename and file log.
+        Args:
+            commit=False: Allows testing of renaming.
+        Returns:
+              Display of file changes, and os.path.rename()
+        """
         log = []
         win_display = []
 
         # Test for individual file drop
         try:
             os.chdir(self.fullpath_name)
+        except FileNotFoundError:
+            return
         except NotADirectoryError:
             dirname, old_name = os.path.split(self.fullpath_name)
             os.chdir(dirname)
@@ -107,10 +130,10 @@ class AutoRenameLayout(BoxLayout):
             win_display = '\n'.join(win_display)
             self.ids.display_files.text = win_display
             if commit:
+                os.rename(old_name, new_name)
                 log.append(old_name)
                 log.append(str(new_name))
-                os.rename(old_name, new_name)
-                log.append(os.path.join(dirname, new_name))
+                log.append(dirname)
                 self.log_write(log)
                 return
             else:
@@ -120,18 +143,19 @@ class AutoRenameLayout(BoxLayout):
         for filename in os.listdir(self.fullpath_name):
             # File dir name
             old_name = str(filename)
-            is_a_dir = False
-            # Test for dir
-            if os.path.isdir(filename):
-                is_a_dir = True
+            is_a_dir = os.path.isdir(filename)
 
             # New name
             new_name = self.rename_engine(old_name, is_a_dir)
             win_display.append(str(new_name))
             if commit:
-                log.append(old_name)
-                log.append(str(new_name))
-                os.rename(filename, new_name)
+                try:
+                    os.rename(filename, new_name)
+                    log.append(old_name)
+                    log.append(str(new_name))
+                except PermissionError:
+                    self._alert(old_name + ": Might be open or in use.\n"
+                                "It has not been renamed.")
 
         # Display potential renaming
         win_display = '\n'.join(win_display)
@@ -142,16 +166,13 @@ class AutoRenameLayout(BoxLayout):
             log.append(str(self.fullpath_name))
             self.log_write(log)
 
-    def log_write(self, log):
-        openfile = open("log.txt", "a")
-        for el in log:
-            openfile.write(el + '\n')
-        openfile.write('stop\n')
-        openfile.close()
-
-    # Split dir and base name for rename
     def dir_rename(self, commit=False):
-
+        """Called on dir name only.
+        Args:
+            commit=False:
+        Returns:
+            Renamed directory, and os.path.rename if commit.
+        """
         if not os.path.isdir(self.fullpath_name):
             self.ids.display_files.text = "Not a directory."
             return
@@ -164,77 +185,120 @@ class AutoRenameLayout(BoxLayout):
         old_name = str(basename)
         new_name = self.rename_engine(old_name, is_a_dir=True)
 
-        # update log_display
         log_display.append(str(new_name))
 
         if commit:
-            log.append(old_name)
-            log.append(new_name)
-            log.append(dirname)  # For undo() loop
-            os.rename(old_name, new_name)
-            self.fullpath_name = os.path.join(dirname, new_name)
-            self.log_write(log)
-
+            try:
+                os.rename(old_name, new_name)
+                log.append(old_name)
+                log.append(new_name)
+                log.append(dirname)
+                self.fullpath_name = os.path.join(dirname, new_name)
+                self.log_write(log)
+                self.list_files()
+            except PermissionError:
+                self._alert("Permission Error. File in use")
+            finally:
+                return
         log_display = '\n'.join(log_display)
         self.ids.display_files.text = log_display
         self.ids.dir_rename.text = log_display
 
+    def log_write(self, log):
+        """Writes log file for committed filename changes.
+        Args:
+            log: takes list of file changes
+        Returns:
+            None. Writes log.txt to whatever dir rename is occuring in.
+        """
+        homepath = str(self._rootpath)
+        os.chdir(homepath)
+        openfile = open("log.txt", "a")
+        openfile.write('stop\n')
+        for el in log:
+            openfile.write(el + '\n')
+        openfile.close()
+
     def undo_rename(self):
+        """ Looks for log.txt in cwd, iterates backwards through undoing
+        filename changes. Limited working at the moment, for immediate undo.
+        Needs to be updated for logfile in home dir.
+        Calls self.list_files() to window display.
+        """
         # Initialize arrays
         undo_these_files = []
         original_filename = []
 
         # Open/assign/close log file
-        # TODO: need to make sure we find correct log file and 'stop's are correct
-        filenames = open('log.txt', 'r')
+        homepath = str(self._rootpath)
+        try:
+            os.chdir(homepath)
+            filenames = open('log.txt', 'r')
+        except FileNotFoundError:
+            self._alert('File not found for Undo.')
+            filenames.close()
+            return
         content = [line.strip('\n') for line in filenames]
         filenames.close()
 
-        content.pop()  # .pop('stop')
         working_dir = content.pop()
         os.chdir(working_dir)
 
         lastindex = None
-        # Reverse Iterate -- Old name, new name ... dir, stop ...
+        # Reverse Iterate -- ['stop', Old name, new name, ...]
         for i in range(len(content) - 1, -1, -1):
             if content[i] == 'stop':
-                lastindex = i + 1  # include 'stop'
+                lastindex = i
                 break
-            if i % 2 == 1:  # odd nums
+            if i % 2 == 0:  # evens: 'cur_names'
                 undo_these_files.append(content[i])
-            else:
+            else:  # odds: 'old names'
                 original_filename.append(content[i])
 
-        content = content[:lastindex]
+        content = content[:lastindex]  # exclude 'stop'
 
-        # Write abridged content to log
-        openfile = open("log.txt", 'w')
-        for el in content:
-            openfile.write(el + '\n')
-        openfile.close()
-
-        assert len(undo_these_files) == len(original_filename)
+        # assert len(undo_these_files) == len(original_filename)
         # Undo Rename
         for i in range(len(undo_these_files)):
             try:
                 os.rename(undo_these_files[i], original_filename[i])
-            except Exception:
+            except PermissionError:
+                self._alert('PermissionError.\n'
+                       'Make sure all files are closed.')
                 pass
+            except FileNotFoundError:
+                self._alert('FileNotFound.\n' +
+                       undo_these_files[i] +
+                       ' has not been re-renamed.')
+
+        # Rewrite abridged content to log
+        os.chdir(homepath)
+        openfile = open("log.txt", 'w')
+        for el in content:
+            openfile.write(el + '\n')
+        openfile.close()
         self.list_files()
 
     def update_fields(self, dt):
+        """Called every 1/30s to check for dropped file."""
         Window.bind(on_dropfile=self._on_file_drop)
 
-    def _on_file_drop(self, window, file_path):  # needs window, parameter
-        # print(file_path)
+    def _on_file_drop(self, window, file_path):
+        """Assigns decoded file_path to self.fullpathname
+            Calls list_files() to display window
+            Requires 'unused' 'window' parameter to function correctly
+        """
         self.fullpath_name = file_path.decode("utf-8")  # convert byte to string
         self.list_files()
+
+    def _alert(self, msg):
+        """Popup Msg box"""
+        pass
 
 
 class AutoFileRenameApp(App):
     def build(self):
         root = AutoRenameLayout()
-        # root.init_text()
         Clock.schedule_interval(root.update_fields, 1.0 / 10.0)
         return root
 
