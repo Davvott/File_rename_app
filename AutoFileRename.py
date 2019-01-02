@@ -1,20 +1,78 @@
 import os
 import re
+import sys
 from kivy.app import App
+from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty
 from kivy.clock import Clock
+from kivy.uix.popup import Popup
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+
+func = ''
+
+# TODO: Why does passing a func(arg=val) break the kv system?
+
+
+class PopupMsg(Popup):
+    """Generic Popup Class. Basic functionality for stop/go on functions
+    Args:
+        func: function passed back through to root for execution
+        title: ="Proceed?"
+    """
+    def __init__ (self, func, title='Do you wish to Proceed?', **kwargs):
+        Popup.__init__(self, **kwargs)
+        self.title = title
+        self.func = func
+        self.temp_obj = AutoRenameLayout()
+        self.proceed = self.temp_obj.proceed
+        self.open()
+
+    def ok(self):
+        self.dismiss()
+        self.temp_obj.proceed = True
+        self.temp_obj.gatekeeper(self.func)
+
+    def cancel(self):
+        self.dismiss()
 
 
 class AutoRenameLayout(BoxLayout):
+    def __init__ (self, **kwargs):
+        BoxLayout.__init__(self, **kwargs)
+        self.proceed = None
+        self.fullpath_name = 'D:'
+        # init fullpath_name, else Window.bind() breaks
+        Window.bind(on_dropfile=self._on_file_drop)
 
+    # NOTE: fullpath_name has to be restated here else Building kv file breaks
     fullpath_name = StringProperty('D:')
     keyword_end = StringProperty('720p')
     split_chars = StringProperty('.')
     replace_phrase = StringProperty('')
     with_phrase = StringProperty("")
     _rootpath = StringProperty(os.path.abspath(os.path.curdir))
+
+    def _alert(self, msg):
+        """Popup Msg box"""
+        pass
+
+    def gatekeeper(self, func):
+        """Only called by button and PopupMsg box
+        proceed is altered by temp obj on PopupMsg.ok()
+        Args:
+            func: function to be called if proceed
+        """
+        if self.proceed is None:
+            _proceed_instance = PopupMsg(func=func)
+
+        if self.proceed == True:
+            func()
+        else:
+            # reset to None
+            self.proceed = None
 
     def check_dir(self):
         """
@@ -25,6 +83,7 @@ class AutoRenameLayout(BoxLayout):
             self.fullpath_name = self.ids.text_label.text
         else:
             self.ids.valid_path.text = "Directory does not exist"
+        return True
 
     def list_files(self):
         """ Checks dir and calls file log to display box """
@@ -106,7 +165,7 @@ class AutoRenameLayout(BoxLayout):
                 new_name = " ".join(file_name_list[:end_indice + 1])
         return new_name
 
-    def file_rename(self, commit=False):
+    def file_rename(self, commit=True):
         """Iterates through dir, displaying possible rename.
         On Commit will rename and file log.
         Args:
@@ -166,10 +225,13 @@ class AutoRenameLayout(BoxLayout):
             log.append(str(self.fullpath_name))
             self.log_write(log)
 
-    def dir_rename(self, commit=False):
-        """Called on dir name only.
+        # reset gatekeep variable
+        self.proceed = None
+
+    def dir_rename(self, commit=True):
+        """Calledon dir/folder base name only.
         Args:
-            commit=False:
+            commit=True:
         Returns:
             Renamed directory, and os.path.rename if commit.
         """
@@ -277,11 +339,15 @@ class AutoRenameLayout(BoxLayout):
         for el in content:
             openfile.write(el + '\n')
         openfile.close()
+
+        # Will move up a level for dir rename
+        self.fullpath_name = str(working_dir)
         self.list_files()
 
-    def update_fields(self, dt):
-        """Called every 1/30s to check for dropped file."""
-        Window.bind(on_dropfile=self._on_file_drop)
+    # Unnecessary with proper __init__
+    # def update_fields(self, dt):
+    #     """Called every 1/10s to check for dropped file."""
+    #     Window.bind(on_dropfile=self._on_file_drop)
 
     def _on_file_drop(self, window, file_path):
         """Assigns decoded file_path to self.fullpathname
@@ -291,15 +357,13 @@ class AutoRenameLayout(BoxLayout):
         self.fullpath_name = file_path.decode("utf-8")  # convert byte to string
         self.list_files()
 
-    def _alert(self, msg):
-        """Popup Msg box"""
-        pass
-
 
 class AutoFileRenameApp(App):
+    # popup_root = PopupMsg()
+
     def build(self):
         root = AutoRenameLayout()
-        Clock.schedule_interval(root.update_fields, 1.0 / 10.0)
+        # Clock.schedule_interval(root.update_fields, 1.0 / 10.0)
         return root
 
 
