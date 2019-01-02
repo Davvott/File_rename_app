@@ -1,16 +1,38 @@
 # NOTE: Strange effects from sizing other BoxLayouts, height settings
+#:import Factory kivy.factory.Factory
+<PopupMsg>:
+    id: main_popup
+    auto_dismiss: False
+    size_hint: 0.5, 0.5
+    on_dismiss:
+    BoxLayout:
+        id: ask_proceed
+        orientation:'vertical'
+        Label:
+            text: "Do you wish to proceed?"
 
-<headerbar@BoxLayout>:
-    size_hint_y: None
-    height: 45
+        BoxLayout:
+            orientation:"horizontal"
+            spacing: 10
+            Button:
+                id: ok_popup
+                text:'OK'
+                size_hint: 0.5, 0.3
+                on_release: root.ok()
+            Button:
+                id: cancel_popup
+                text:'Cancel'
+                size_hint: 0.5, 0.3
+                on_release:root.cancel()
+
+<AutoRenameLayout>:
+# Main app needs canvas for popup to be erased by
     canvas:
         Color:
-            rgba: 1, 1, 0, 1
+            rgba: 128, 128, 128, 0.2
         Rectangle:
             pos: self.pos
             size: self.size
-
-<AutoRenameLayout>:
 
     BoxLayout:
         orientation: 'vertical'
@@ -47,11 +69,11 @@
                 on_text: root.fullpath_name = root.ids.text_label.text
                 multiline: False
             Button:
-                text: "List Files"
+                text: "Check Dir"
                 size_hint_max_x: 75
-                on_press: root.check_dir()
+                on_press: root.gatekeeper(func=root.check_dir)
 
-        # Second Row
+        # VALIDATION Row
         BoxLayout:
             size_hint_y: None
             height: 30
@@ -90,6 +112,7 @@
             Button:
                 text: "Test \nChanges"
                 size_hint_max_x: 75
+
                 canvas.before:
                     Color:
                         rgba: 0, 0, 0, 1
@@ -146,9 +169,9 @@
                 id: with_phrase
                 text: root.with_phrase
                 on_text: root.with_phrase = root.ids.with_phrase.text
-            Button:
-                text: "Apply"
-                on_press: # update
+#            Button:
+#                text: ''
+#                on_press: # None
 
         # Folder dir rename
         BoxLayout:
@@ -161,17 +184,18 @@
             TextInput:
                 id: dir_rename
                 text: root.fullpath_name
-                on_text:
+                on_text: root.fullpath_name = root.ids.dir_rename.text
+                multiline: False
             Button:
                 size_hint_max_x: 100
                 text: "Rename Dir"
-                on_press: root.dir_rename(commit=True)
+                on_press: root.gatekeeper(root.dir_rename)
 
         # Big Button
         BoxLayout:
             Button:
                 text: "Apply Changes"
-                on_press: root.file_rename(commit=True)
+                on_press: root.gatekeeper(root.file_rename)
             Button:
                 size_hint_max_x: 150
                 text: "Undo"
