@@ -39,6 +39,24 @@ class PopupMsg(Popup):
         self.dismiss()
 
 
+class PopupAlert(Popup):
+    """Popup Alert for errors and exceptions. Raised by _alert().
+    Args must be passed in to _alert(title='', msg='') call.
+    Args:
+        title: ='Alert'
+        msg: ='Error'
+    """
+    def __init__(self, title='Alert', msg="Error", **kwargs):
+        Popup.__init__(self, **kwargs)
+        self.title = title
+        self.msg = msg
+        self.ids.alert_msg.text = self.msg
+        self.open()
+
+    def ok(self):
+        self.dismiss()
+
+
 class AutoRenameLayout(BoxLayout):
     def __init__ (self, **kwargs):
         BoxLayout.__init__(self, **kwargs)
@@ -55,9 +73,9 @@ class AutoRenameLayout(BoxLayout):
     with_phrase = StringProperty("")
     _rootpath = StringProperty(os.path.abspath(os.path.curdir))
 
-    def _alert(self, msg):
+    def _alert(self, title='Alert', msg='Error'):
         """Popup Msg box"""
-        pass
+        alert_instance = PopupAlert(title=title, msg=msg)
 
     def gatekeeper(self, func):
         """Only called by button and PopupMsg box
@@ -83,6 +101,8 @@ class AutoRenameLayout(BoxLayout):
             self.fullpath_name = self.ids.text_label.text
         else:
             self.ids.valid_path.text = "Directory does not exist"
+            self._alert(title='Incorrect path', msg='Directory does not exist')
+
         return True
 
     def list_files(self):
@@ -152,7 +172,7 @@ class AutoRenameLayout(BoxLayout):
         # Index of keyword from file_name_list
         try:
             end_indice = file_name_list.index(self.keyword_end)
-        except:
+        except ValueError:
             end_indice = -2
 
         if not is_a_dir:
@@ -189,14 +209,16 @@ class AutoRenameLayout(BoxLayout):
             win_display = '\n'.join(win_display)
             self.ids.display_files.text = win_display
             if commit:
-                os.rename(old_name, new_name)
-                log.append(old_name)
-                log.append(str(new_name))
-                log.append(dirname)
-                self.log_write(log)
-                return
-            else:
-                return
+                try:
+                    os.rename(old_name, new_name)
+                    log.append(old_name)
+                    log.append(str(new_name))
+                    log.append(dirname)
+                    self.log_write(log)
+                    return
+                except PermissionError:
+                    self._alert(msg='File in use or open.')
+                    return
 
         # Iterate through file/folders in dir
         for filename in os.listdir(self.fullpath_name):
@@ -213,7 +235,7 @@ class AutoRenameLayout(BoxLayout):
                     log.append(old_name)
                     log.append(str(new_name))
                 except PermissionError:
-                    self._alert(old_name + ": Might be open or in use.\n"
+                    self._alert(msg=str(old_name) + ": Might be open or in use.\n"
                                 "It has not been renamed.")
 
         # Display potential renaming
@@ -237,6 +259,7 @@ class AutoRenameLayout(BoxLayout):
         """
         if not os.path.isdir(self.fullpath_name):
             self.ids.display_files.text = "Not a directory."
+            self._alert(msg='Not a directory.')
             return
         dirname = os.path.dirname(self.fullpath_name)
         basename = os.path.basename(self.fullpath_name)
@@ -259,7 +282,7 @@ class AutoRenameLayout(BoxLayout):
                 self.log_write(log)
                 self.list_files()
             except PermissionError:
-                self._alert("Permission Error. File in use")
+                self._alert(msg="Permission Error. File in use")
             finally:
                 return
         log_display = '\n'.join(log_display)
@@ -297,7 +320,7 @@ class AutoRenameLayout(BoxLayout):
             os.chdir(homepath)
             filenames = open('log.txt', 'r')
         except FileNotFoundError:
-            self._alert('File not found for Undo.')
+            self._alert(msg='File not found for Undo.')
             filenames.close()
             return
         content = [line.strip('\n') for line in filenames]
@@ -325,13 +348,13 @@ class AutoRenameLayout(BoxLayout):
             try:
                 os.rename(undo_these_files[i], original_filename[i])
             except PermissionError:
-                self._alert('PermissionError.\n'
-                       'Make sure all files are closed.')
+                self._alert(msg='PermissionError.\n'
+                            'Make sure all files are closed.')
                 pass
             except FileNotFoundError:
-                self._alert('FileNotFound.\n' +
-                       undo_these_files[i] +
-                       ' has not been re-renamed.')
+                self._alert(msg='FileNotFound.\n' +
+                            undo_these_files[i] +
+                            ' has not been re-renamed.')
 
         # Rewrite abridged content to log
         os.chdir(homepath)
@@ -363,7 +386,6 @@ class AutoFileRenameApp(App):
 
     def build(self):
         root = AutoRenameLayout()
-        # Clock.schedule_interval(root.update_fields, 1.0 / 10.0)
         return root
 
 

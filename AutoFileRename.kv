@@ -9,6 +9,7 @@
         id: ask_proceed
         orientation:'vertical'
         Label:
+            id: pop_msg
             text: "Do you wish to proceed?"
 
         BoxLayout:
@@ -24,6 +25,25 @@
                 text:'Cancel'
                 size_hint: 0.5, 0.3
                 on_release:root.cancel()
+<PopupAlert>:
+    auto_dismiss: True
+    size_hint: 0.5, 0.5
+    BoxLayout:
+        id: alert_pop  # for title change
+        orientation:'vertical'
+        Label:
+            id: alert_msg
+            text: "Something has not happened."
+
+        BoxLayout:
+            orientation:"horizontal"
+            spacing: 10
+
+            Button:
+                id: ok_popup
+                text:'OK'
+                size_hint: 0.5, 0.3
+                on_release: root.ok()
 
 <AutoRenameLayout>:
 # Main app needs canvas for popup to be erased by
@@ -71,7 +91,7 @@
             Button:
                 text: "Check Dir"
                 size_hint_max_x: 75
-                on_press: root.gatekeeper(func=root.check_dir)
+                on_press: root.check_dir
 
         # VALIDATION Row
         BoxLayout:
