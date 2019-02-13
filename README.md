@@ -9,16 +9,17 @@ The undo function is basic but works. Re/writes to log file that is placed in Ap
 
 The replace/with phrase can be passed '*' for catching any char/space in a phrase. This needs to be in an information popup/win. NOTE: Parsing then passing the string variable to a string that can be used in a regex was also a bit of internet hunt, turns out your_regexstring = r"some_string {}".format(variable) does the job.
 
+If replace_phrase has text, and with_ doesn't; guess what? It'll delete it!
+
 **TODO**: 
 * Instructions,
 * Walk function through a few more dirs, [maybe]
-* Popup functionality: Errors, Info
 * "Are You Sure?" popup - *e.g.* where someone has put a***/"" into replace/with phrase = mass deletion 
 
 **NOTE** - KIVY resources are a bit weird and difficult to navigate for some of the more esoteric features, for example, the window.bind drop_file() call was tricky to implement, needing an __init__ call with super,  I struggled with how to code it so the variable was updated appropriately. Because of this there are a few bits of code that seem like they could be refactored, but doing so was breaking the link to the fullpath_name variable. For example, there are 2 fullpath_name calls in init and just outside. 
 
-**POPUP** - Because of the way KIVY uses Popups, calling a Popup as a gatekeeper for file renaming buttons was challenging (as opposed to tkinter). The class can be called, but the func relies on the ok/cancel button press, which then needs to pass the func and a proceed variable back to the main class. The problem is in that the code doesn't pause when the Popup is raised. I had to implement the proceed variable in the main class init, and then utilise a gatekeeper(func_to_call) function, with a selection on the proceed variable, to raise a class instance of the PopupMsg. The PopupMsg *then* recreates the mainclassobj setting the proceed variable appropriately and then only on_press **ok** calling mainclassibj.gatekeeper(func_to_call) AGAIN. 
-***I have no idea if this is a particularly efficient way of doing this.***
+**POPUP** - Because of the way KIVY uses Popups, calling a Popup as a gatekeeper for file renaming buttons was challenging because the event-driven nature doesn't hodl up for the press of a button within the popup (as opposed to tkinter). I've now created a Popup(class) within the gatekeeper() function, that allows control over btn.bind(on_press=func()) to proceed with file/dir renaming. Given the event-driven style of Kivy, this allows the use of a Popup to gate-keep functionality without relying on time stalls or whatever. Previously, I had created a whole Popup class but had to re-instance the main class() within it to hit the gatekeeper() and proceed with renaming. Not good. I tried using EventDispatcher Inhereitence to bind to a variable within the Popup class, but it only registers change when changed <i>outside</i> the class, not by changing the variable=ObjectProperty() from the ok() function assigned to the ok button. (!)
+
 
 If you come across this and have advice or suggestions by all means let me know. FWIW I'll be doing some more basic stuff with kivy in semester 1 (Oz) but can't imagine I'll be working with it too much more for the time being. 
 
