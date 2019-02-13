@@ -1,30 +1,6 @@
 # NOTE: Strange effects from sizing other BoxLayouts, height settings
 #:import Factory kivy.factory.Factory
-<PopupMsg>:
-    id: main_popup
-    auto_dismiss: False
-    size_hint: 0.5, 0.5
-    on_dismiss:
-    BoxLayout:
-        id: ask_proceed
-        orientation:'vertical'
-        Label:
-            id: pop_msg
-            text: "Do you wish to proceed?"
 
-        BoxLayout:
-            orientation:"horizontal"
-            spacing: 10
-            Button:
-                id: ok_popup
-                text:'OK'
-                size_hint: 0.5, 0.3
-                on_release: root.ok()
-            Button:
-                id: cancel_popup
-                text:'Cancel'
-                size_hint: 0.5, 0.3
-                on_release:root.cancel()
 <PopupAlert>:
     auto_dismiss: True
     size_hint: 0.5, 0.5
@@ -34,13 +10,11 @@
         Label:
             id: alert_msg
             text: "Something has not happened."
-
         BoxLayout:
             orientation:"horizontal"
             spacing: 10
 
             Button:
-                id: ok_popup
                 text:'OK'
                 size_hint: 0.5, 0.3
                 on_release: root.ok()
@@ -209,13 +183,13 @@
             Button:
                 size_hint_max_x: 100
                 text: "Rename Dir"
-                on_press: root.gatekeeper(root.dir_rename)
+                on_press: root.gatekeeper('dir')
 
         # Big Button
         BoxLayout:
             Button:
                 text: "Apply Changes"
-                on_press: root.gatekeeper(root.file_rename)
+                on_press: root.gatekeeper('file')
             Button:
                 size_hint_max_x: 150
                 text: "Undo"

@@ -5,92 +5,69 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import StringProperty
+from kivy.uix.gridlayout import GridLayout
+from kivy.properties import StringProperty, BooleanProperty, NumericProperty
 from kivy.clock import Clock
 from kivy.uix.popup import Popup
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-
-func = ''
-
-# TODO: Why does passing a func(arg=val) break the kv system?
-
-
-class PopupMsg(Popup):
-    """Generic Popup Class. Basic functionality for stop/go on functions
-    Args:
-        func: function passed back through to root for execution
-        title: ="Proceed?"
-    """
-    def __init__ (self, func, title='Do you wish to Proceed?', **kwargs):
-        Popup.__init__(self, **kwargs)
-        self.title = title
-        self.func = func
-        self.temp_obj = AutoRenameLayout()
-        self.proceed = self.temp_obj.proceed
-        self.open()
-
-    def ok(self):
-        self.dismiss()
-        self.temp_obj.proceed = True
-        self.temp_obj.gatekeeper(self.func)
-
-    def cancel(self):
-        self.dismiss()
-
-
-class PopupAlert(Popup):
-    """Popup Alert for errors and exceptions. Raised by _alert().
-    Args must be passed in to _alert(title='', msg='') call.
-    Args:
-        title: ='Alert'
-        msg: ='Error'
-    """
-    def __init__(self, title='Alert', msg="Error", **kwargs):
-        Popup.__init__(self, **kwargs)
-        self.title = title
-        self.msg = msg
-        self.ids.alert_msg.text = self.msg
-        self.open()
-
-    def ok(self):
-        self.dismiss()
+from kivy.event import EventDispatcher
 
 
 class AutoRenameLayout(BoxLayout):
     def __init__ (self, **kwargs):
         BoxLayout.__init__(self, **kwargs)
+
         self.proceed = None
         self.fullpath_name = 'D:'
         # init fullpath_name, else Window.bind() breaks
         Window.bind(on_dropfile=self._on_file_drop)
 
-    # NOTE: fullpath_name has to be restated here else Building kv file breaks
+    # NOTE: fullpath_name has to be restated here
+    # else Build of kv file breaks
+    _rootpath = StringProperty(os.path.abspath(os.path.curdir))
     fullpath_name = StringProperty('D:')
     keyword_end = StringProperty('720p')
     split_chars = StringProperty('.')
     replace_phrase = StringProperty('')
     with_phrase = StringProperty("")
-    _rootpath = StringProperty(os.path.abspath(os.path.curdir))
 
     def _alert(self, title='Alert', msg='Error'):
         """Popup Msg box"""
         alert_instance = PopupAlert(title=title, msg=msg)
 
     def gatekeeper(self, func):
-        """Only called by button and PopupMsg box
-        proceed is altered by temp obj on PopupMsg.ok()
+        """Only called by button, Popup is created to gatekeep button actions
+
         Args:
             func: function to be called if proceed
         """
-        if self.proceed is None:
-            _proceed_instance = PopupMsg(func=func)
+        text = 'Proceed'
+        ok = Button(text='OK', )
+        cancel = Button(text='Cancel')
 
-        if self.proceed == True:
-            func()
-        else:
-            # reset to None
-            self.proceed = None
+        if str(func)== 'file':
+            text = 'Proceeding will rename files in your system'
+            title = 'Proceed with File Re-Name?'
+            ok.bind(on_press=self.file_rename)
+        else:  # func == 'dir'
+            text = 'This action will re-name the current Dir'
+            title = 'Proceed with Dir Re-name?'
+            ok.bind(on_press=self.dir_rename)
+
+        buttons = GridLayout(cols=2, rows=1, spacing=10, size_hint=(1, 0.3))
+        buttons.add_widget(ok)
+        buttons.add_widget(cancel)
+
+        content = BoxLayout(orientation='vertical')
+        content.add_widget(Label(text=text))
+        content.add_widget(buttons)
+
+        popup = Popup(title=title, content=content,
+                      size_hint=(0.5, 0.5), auto_dismiss=False)
+        cancel.bind(on_press=popup.dismiss)  # After Popup creation
+        ok.bind(on_release=popup.dismiss)
+        popup.open()
 
     def check_dir(self):
         """
@@ -367,7 +344,7 @@ class AutoRenameLayout(BoxLayout):
         self.fullpath_name = str(working_dir)
         self.list_files()
 
-    # Unnecessary with proper __init__
+    # Redundant with proper __init__
     # def update_fields(self, dt):
     #     """Called every 1/10s to check for dropped file."""
     #     Window.bind(on_dropfile=self._on_file_drop)
@@ -381,8 +358,24 @@ class AutoRenameLayout(BoxLayout):
         self.list_files()
 
 
+class PopupAlert(Popup):
+    """Popup Alert for errors and exceptions. Raised by _alert().
+    Args must be passed in to _alert(title='', msg='') call.
+    Args:
+        title: ='Alert'
+        msg: ='Error'
+    """
+    def __init__(self, title='Alert', msg="Error", **kwargs):
+        Popup.__init__(self, **kwargs)
+        self.title = title
+        self.msg = msg
+        self.ids.alert_msg.text = self.msg
+        self.open()
+
+    def ok(self):
+        self.dismiss()
+
 class AutoFileRenameApp(App):
-    # popup_root = PopupMsg()
 
     def build(self):
         root = AutoRenameLayout()
