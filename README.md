@@ -20,9 +20,9 @@ If replace_phrase has text, and with_ doesn't; guess what? It'll delete it!
 
 **POPUP** - Because of the way KIVY uses Popups, calling a Popup as a gatekeeper for file renaming buttons was challenging because the event-driven nature doesn't hodl up for the press of a button within the popup (as opposed to tkinter). I've now created a Popup(class) within the gatekeeper() function, that allows control over btn.bind(on_press=func()) to proceed with file/dir renaming. Given the event-driven style of Kivy, this allows the use of a Popup to gate-keep functionality without relying on time stalls or whatever. Previously, I had created a whole Popup class but had to re-instance the main class() within it to hit the gatekeeper() and proceed with renaming. Not good. I tried using EventDispatcher inheritance to bind to a ObjProp() variable within the Popup class, but it only registers change when the variable is changed <i>outside</i> the class, not by changing the variable=ObjProp() from the ok() function assigned to the ok button. (!)
 
-TL;DR - Create a basic popup within your gate-keep func, you can control the binding of the buttons to proceed with, essentially, selections easily. 
+TL;DR - Create a basic popup within your gate-keep func, you can control the binding of the buttons to proceed with selections easily. without having to use. 
 
-NB. This is not really available knowledge anywhere I found on the net. 
+NB. This is not really obvious knowledge anywhere I found on the net. 
 
 If you come across this and have advice or suggestions by all means let me know. FWIW I'll be doing some more basic stuff with kivy in semester 1 (Oz) but can't imagine I'll be working with it too much more for the time being. 
 
