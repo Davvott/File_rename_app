@@ -11,10 +11,6 @@ The replace/with phrase can be passed '*' for catching any char/space in a phras
 
 If replace_phrase has text, and with_ doesn't; guess what? It'll delete it!
 
-**TODO**: 
-* Instructions,
-* Walk function through a few more dirs, [maybe]
-
 **NOTE** - KIVY resources are a bit weird and difficult to navigate for some of the more esoteric features, for example, the window.bind drop_file() call was tricky to implement, I struggled with how to code it so the variable was updated appropriately. Because of this there are a few bits of code that seem like they could be refactored, but doing so was breaking the link to the fullpath_name variable. For example, there are 2 fullpath_name calls in init and just outside. I guess this is a case of potentially redundant code, but 'are you going to try and change it or refactor it if it only breaks again?'
 
 **POPUP** - I've finally learned that this is the difference between static GUI and a dynamic GUI. I guess it is also to do with any logic required from the GUI should go through the main not the gui. So it makes sense to call the popup with the variables from the gatekeeper function.
